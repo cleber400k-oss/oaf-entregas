@@ -1,0 +1,43 @@
+OAF ENTREGAS v1.2.0 — ETAPA 12 / RELATÓRIO DE HOMOLOGAÇÃO
+
+ESCOPO
+- Preparação para deploy HTTPS e domínio.
+- Hardening do backend para reverse proxy.
+- Backup/restore do SQLite.
+- Docker/Caddy e alternativa systemd.
+- Health checks, logs e encerramento gracioso.
+- Isolamento de dados por perfil.
+- PWA atualizado para produção.
+
+VALIDAÇÕES EXECUTADAS
+PASS  server.js sem erro de sintaxe
+PASS  scripts de backup/restore/smoke/validate sem erro de sintaxe
+PASS  Service Worker sem erro de sintaxe
+PASS  JavaScript inline principal do frontend sem erro de sintaxe
+PASS  manifest.webmanifest válido
+PASS  ícone 192x192 correto
+PASS  ícone 512x512 correto
+PASS  pacote contém Dockerfile, Docker Compose e Caddyfile
+PASS  /api/health responde 200
+PASS  /api/ready responde 200
+PASS  versão reportada 1.2.0
+PASS  banco SQLite responde health-check
+PASS  CSP presente
+PASS  robots.txt impede indexação pública
+PASS  configuração inicial do Administrador Principal
+PASS  estado autenticado remove senhas
+PASS  Comerciante recebe somente sua área de dados
+PASS  Entregador não recebe cobranças/configuração financeira
+PASS  Entregador não recebe preço da entrega na resposta da API
+PASS  outros entregadores chegam ao Entregador apenas com dados operacionais mínimos de fila
+PASS  Admin continua recebendo a base completa
+PASS  criação de entrega pelo Comerciante continua acionando atribuição automática
+PASS  backup online consistente via node:sqlite
+PASS  arquivos WAL/SHM temporários do backup são removidos
+PASS  restore com PRAGMA integrity_check = ok
+PASS  X-Forwarded-Proto é ignorado quando OAF_TRUST_PROXY=0
+PASS  HSTS é enviado atrás de proxy confiável em HTTPS
+PASS  cookie de sessão recebe Secure em produção HTTPS
+
+LIMITAÇÃO DESTA HOMOLOGAÇÃO
+Não houve publicação em domínio/VPS externo porque nenhuma credencial de hospedagem ou DNS foi fornecida. Portanto, certificado Let's Encrypt real e testes físicos entre redes diferentes só podem ser concluídos após apontar um domínio e subir este pacote em um servidor externo.

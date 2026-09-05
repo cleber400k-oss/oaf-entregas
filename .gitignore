@@ -1,0 +1,8 @@
+.env
+.env.production
+data/*.sqlite*
+backups/*.sqlite*
+logs/*
+!data/.gitkeep
+!backups/.gitkeep
+!logs/.gitkeep

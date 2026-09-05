@@ -1,0 +1,42 @@
+OAF ENTREGAS v1.3.0 — ETAPA 13 / RELATÓRIO DE PUBLICAÇÃO
+
+STATUS
+- Código de produção preparado para publicação real: OK
+- Caminho Railway preparado: OK
+- Caminho VPS/Caddy preservado: OK
+- Publicação em provedor externo: PENDENTE DE CONEXÃO/CREDENCIAL
+- Domínio próprio: PENDENTE DE ACESSO AO DNS
+
+ALTERAÇÕES DE PRODUÇÃO
+- Backend atualizado para v1.3.0.
+- Autodetecção de RAILWAY_PUBLIC_DOMAIN.
+- Autodetecção de RAILWAY_VOLUME_MOUNT_PATH.
+- OAF_REQUIRE_PERSISTENT_STORAGE pode bloquear deploy Railway sem Volume.
+- /api/health, /api/ready e /api/config informam plataforma e persistência.
+- Script scripts/remote-smoke.js criado para homologação HTTPS externa.
+- Guia deploy/railway/RAILWAY_DEPLOY.md criado.
+- Variáveis de produção Railway documentadas.
+
+TESTES LOCAIS DE COMPATIBILIDADE CLOUD
+- Node server.js syntax: PASS
+- Service Worker syntax: PASS
+- package validator: PASS
+- Railway sem Volume + OAF_REQUIRE_PERSISTENT_STORAGE=1: bloqueado com exit 78 — PASS
+- Railway simulado com Volume: inicia — PASS
+- PORT dinâmico: PASS
+- plataforma reportada como railway: PASS
+- persistentStorage=true: PASS
+- RAILWAY_PUBLIC_DOMAIN -> OAF public URL: PASS
+- proxy X-Forwarded-Proto=https reconhecido: PASS
+- HSTS em contexto HTTPS: PASS
+- CSP presente: PASS
+- SQLite criado dentro do Volume: PASS
+- logs criados dentro do Volume: PASS
+- reinício mantendo configuração inicial e banco: PASS
+- remote-smoke via proxy HTTPS local: 21 PASS / 0 FAIL
+
+TESTE REMOTO QUE DEVE SER RODADO APÓS PUBLICAR
+node scripts/remote-smoke.js https://SEU-DOMINIO
+
+CRITÉRIO DE ENCERRAMENTO TOTAL DA ETAPA 13
+A etapa só pode ser marcada como publicada de verdade após existir uma URL HTTPS externa e o remote-smoke passar nessa URL. Sem uma conta de hospedagem conectada ou credenciais de VPS, não é tecnicamente possível enviar o servidor para a internet nem alterar DNS com segurança.

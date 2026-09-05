@@ -1,0 +1,7 @@
+.env
+.env.production
+data
+backups
+logs
+.git
+*.zip

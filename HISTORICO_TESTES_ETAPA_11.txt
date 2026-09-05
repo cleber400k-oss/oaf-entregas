@@ -1,0 +1,26 @@
+OAF ENTREGAS v1.1.0 — ETAPA 11 / RELATÓRIO DE VALIDAÇÃO
+
+VALIDAÇÕES EXECUTADAS NO BACKEND REAL:
+- Inicialização limpa do SQLite: OK
+- Health check /api/health: OK
+- Configuração inicial com código de 6 dígitos: OK
+- Senha do Admin gravada via hash scrypt e não devolvida no estado: OK
+- Login centralizado do Admin: OK
+- Criação/sincronização de comerciante e entregador: OK
+- Login do entregador torna-o online na fila central: OK
+- Login do comerciante: OK
+- Comerciante cria pedido aguardando entregador: OK
+- Servidor atribui automaticamente ao próximo entregador elegível: OK
+- Estado Atribuída sincronizado para o entregador: OK
+- Entregador avança Atribuída -> Indo buscar: OK
+- Tentativa do comerciante de forçar status Concluída foi ignorada pelo servidor: OK
+- Fluxo completo do entregador até Concluída: OK
+- Ao concluir, entregador volta para Disponível/fim da fila: OK
+- Financeiro recebe a entrega concluída no ciclo de cobrança: OK
+- Mesclagem concorrente: alteração do Admin + reclamação do comerciante usando revisão antiga preservou ambas: OK
+- JavaScript do frontend: node --check OK
+- JavaScript do backend: node --check OK
+- Manifest e Service Worker atualizados para v1.1.0: OK
+
+LIMITAÇÃO DO AMBIENTE DE TESTE:
+O Chromium da sessão bloqueou navegação para localhost por política administrativa (ERR_BLOCKED_BY_ADMINISTRATOR). Por isso, não foi afirmado teste visual automatizado do frontend contra o servidor real. As APIs, regras de servidor e sintaxe foram testadas diretamente.

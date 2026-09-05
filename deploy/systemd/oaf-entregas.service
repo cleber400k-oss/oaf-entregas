@@ -1,0 +1,23 @@
+[Unit]
+Description=OAF Entregas Backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=oaf
+Group=oaf
+WorkingDirectory=/opt/oaf-entregas
+EnvironmentFile=/etc/oaf-entregas.env
+ExecStart=/usr/bin/node /opt/oaf-entregas/server.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/oaf-entregas /var/log/oaf-entregas /var/backups/oaf-entregas
+
+[Install]
+WantedBy=multi-user.target

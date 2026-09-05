@@ -1,0 +1,11 @@
+# OAF Entregas v1.3.0 — Railway production variables
+OAF_ENV=production
+OAF_BIND=0.0.0.0
+OAF_SESSION_HOURS=168
+OAF_TRUST_PROXY=1
+OAF_COOKIE_SECURE=1
+OAF_REQUIRE_PERSISTENT_STORAGE=1
+# Railway injeta PORT, RAILWAY_PUBLIC_DOMAIN e RAILWAY_VOLUME_MOUNT_PATH automaticamente.
+# OAF_PUBLIC_URL é opcional; se ausente, o servidor usa https://$RAILWAY_PUBLIC_DOMAIN.
+# Defina OAF_SETUP_CODE com 6 dígitos apenas antes do primeiro cadastro e remova depois.
+OAF_SETUP_CODE=123456
