@@ -1,0 +1,70 @@
+name: OAF CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: oaf-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install
+        run: npm ci --ignore-scripts
+
+      - name: Validate package
+        run: npm run validate
+
+      - name: JavaScript syntax
+        run: |
+          node --check server.js
+          node --check scripts/backup.js
+          node --check scripts/restore.js
+          node --check scripts/smoke-test.js
+          node --check scripts/remote-smoke.js
+          node --check scripts/validate-package.js
+
+      - name: Start local backend
+        run: |
+          mkdir -p "$RUNNER_TEMP/oaf-data"
+          OAF_ENV=development OAF_DATA_DIR="$RUNNER_TEMP/oaf-data" node server.js >"$RUNNER_TEMP/oaf-server.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/oaf-server.pid"
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8787/api/ready >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/oaf-server.log"
+          exit 1
+
+      - name: Local smoke test
+        run: npm run smoke
+
+      - name: Production smoke (manual runs only)
+        if: github.event_name == 'workflow_dispatch'
+        run: node scripts/remote-smoke.js https://oaf-entregas-production.up.railway.app
+
+      - name: Stop local backend
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/oaf-server.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/oaf-server.pid")" 2>/dev/null || true
+          fi
