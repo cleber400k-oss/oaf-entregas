@@ -303,7 +303,7 @@ function mergeCourierChange(result,before,after,actor){
     if(after){if(idx>=0)result.couriers[idx]=clone(after);else result.couriers.push(clone(after));}return;
   }
   if(actor.role==='courier'&&id===actor.courierId&&cur&&after){
-    const c=clone(cur);for(const k of ['online','connection','gps','lastPing','connectionLostAt'])if(after[k]!==undefined)c[k]=clone(after[k]);result.couriers[idx]=c;
+    const c=clone(cur);for(const k of ['connection','gps','lastPing','connectionLostAt'])if(after[k]!==undefined)c[k]=clone(after[k]);result.couriers[idx]=c;
   }
 }
 function mergeMerchantChange(result,before,after,actor){
@@ -338,6 +338,11 @@ function mergeSimpleCollection(result,name,baseArr,clientArr,actor){
     if(!allowed)continue;
     const idx=result[name].findIndex(e=>e.id===x.id),cur=idx>=0?result[name][idx]:null;
     if(actor.role==='courier'&&name==='internalMessages'&&cur){const y=clone(cur);y.read=!!x.read;y.readAt=x.readAt||y.readAt;if(idx>=0)result[name][idx]=y;continue}
+    if(actor.role==='courier'&&name==='logoutRequests'){
+      if(cur)continue;
+      if(activeDelivery(result,actor.courierId))continue;
+      x.courierId=actor.courierId;x.status='Pendente';x.resolvedAt=null;x.resolvedBy='';delete x.sessionRevokedAt;
+    }
     if(idx>=0)result[name][idx]=x;else result[name].push(x);
   }
 }
@@ -370,6 +375,17 @@ function threeWayMerge(base,client,current,actor){
     result.settings={...(result.settings||{})};for(const [k,v] of Object.entries(client.settings||{}))if(!jEq(base.settings?.[k],v))result.settings[k]=clone(v);
     result.paymentSettings=clone(client.paymentSettings||result.paymentSettings||{});result.meta={...(result.meta||{}),...(client.meta||{})};
   }
+  // Hotfix 17.1 — saída do entregador controlada pela Administração.
+  const logoutBefore=mapById(current.logoutRequests||[]);
+  for(const r of result.logoutRequests||[]){
+    const old=logoutBefore.get(r.id);if(!old||old.status===r.status)continue;
+    if(r.status==='Aprovado'){
+      const active=activeDelivery(result,r.courierId),c=(result.couriers||[]).find(x=>x.id===r.courierId);
+      if(active){r.status='Pendente';r.resolvedAt=null;r.resolvedBy='';delete r.sessionRevokedAt;if(c){c.online=true;c.status=active.status;}continue;}
+      if(c){c.online=false;c.status='Offline';c.queue=0;}
+      r.sessionRevokedAt=now();
+    }
+  }
   // Detecta conclusões recém-aplicadas e fecha o financeiro/fila no servidor.
   const baseD=mapById(current.deliveries||[]);for(const d of result.deliveries||[]){const old=baseD.get(d.id);if(old&&old.status!=='Concluída'&&d.status==='Concluída'){
     d.finishedAt=d.finishedAt||now();addDeliveryToChargeServer(result,d);const c=(result.couriers||[]).find(x=>x.id===d.courierId);if(c){c.deliveriesToday=Number(c.deliveriesToday||0)+1;const max=Math.max(0,...(result.couriers||[]).filter(x=>x.online&&!x.adminBlocked&&x.id!==c.id).map(x=>Number(x.queue||0)));c.queue=max+1;c.status='Disponível';}
@@ -383,8 +399,13 @@ function forwardedProto(req){return TRUST_PROXY?String(req.headers['x-forwarded-
 function isSecure(req){return COOKIE_SECURE_MODE==='1'||COOKIE_SECURE_MODE==='true'||COOKIE_SECURE_MODE==='yes'||!!req.socket.encrypted||forwardedProto(req)==='https'}
 function cleanupSessions(){db.prepare('DELETE FROM sessions WHERE expires_at<?').run(now())}
 function sessionFromReq(req){
-  cleanupSessions();const raw=parseCookies(req).oaf_session;if(!raw)return null;const hash=sha256(raw),row=db.prepare('SELECT user_id,csrf,expires_at FROM sessions WHERE token_hash=?').get(hash);if(!row||row.expires_at<now())return null;
-  const {state}=getState(),user=findActor(state,row.user_id);if(!user||user.active===false)return null;return{token:raw,csrf:row.csrf,user};
+  cleanupSessions();const raw=parseCookies(req).oaf_session;if(!raw)return null;const hash=sha256(raw),row=db.prepare('SELECT user_id,csrf,expires_at,created_at FROM sessions WHERE token_hash=?').get(hash);if(!row||row.expires_at<now())return null;
+  const {state}=getState(),user=findActor(state,row.user_id);if(!user||user.active===false)return null;
+  if(user.role==='courier'){
+    const approved=(state.logoutRequests||[]).filter(r=>r.courierId===user.courierId&&r.status==='Aprovado'&&r.sessionRevokedAt).sort((a,b)=>Number(b.sessionRevokedAt||0)-Number(a.sessionRevokedAt||0))[0];
+    if(approved&&Number(approved.sessionRevokedAt)>=Number(row.created_at||0)){db.prepare('DELETE FROM sessions WHERE token_hash=?').run(hash);return null;}
+  }
+  return{token:raw,csrf:row.csrf,user};
 }
 function createSession(req,userId){
   const token=randHex(32),csrf=randHex(18),exp=now()+SESSION_HOURS*3600000;db.prepare('DELETE FROM sessions WHERE user_id=?').run(userId);db.prepare('INSERT INTO sessions(token_hash,user_id,csrf,expires_at,created_at) VALUES(?,?,?,?,?)').run(sha256(token),userId,csrf,exp,now());return{token,csrf,exp,secure:isSecure(req)};
